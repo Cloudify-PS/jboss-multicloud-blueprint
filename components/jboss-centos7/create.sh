@@ -13,6 +13,4 @@ sudo sudo cp /opt/wildfly/docs/contrib/scripts/systemd/wildfly.conf /etc/wildfly
 sudo cp /opt/wildfly/docs/contrib/scripts/systemd/launch.sh /opt/wildfly/bin/
 sudo sh -c 'chmod +x /opt/wildfly/bin/*.sh'
 sudo cp /opt/wildfly/docs/contrib/scripts/systemd/wildfly.service /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable wildfly
-
+sudo systemctl daemon-reload
