@@ -1,4 +1,3 @@
 #!/bin/sh
 
-systemctl stop wildfly
-
+sudo systemctl stop wildfly

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-sudo systemctl enable wildfly
-
+# sudo systemctl enable wildfly
+#
 
 sudo systemctl enable wildfly
 sudo systemctl status wildfly

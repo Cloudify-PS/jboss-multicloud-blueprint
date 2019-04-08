@@ -1,0 +1,120 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+
+description: >
+    Installs JBoss application on CentOS VM.
+
+
+imports:
+  - http://cloudify.co/spec/cloudify/4.5.5/types.yaml
+  - plugin:cloudify-utilities-plugin
+
+
+inputs:
+
+  cloud_env:
+    description: >
+      Name of the chosen cloud environment. Valid inputs: [openstack, azure]
+    default: openstack
+
+  use_existing_vm_deployment:
+    default: true
+
+  app_url:
+    default: https://github.com/Cloudify-PS/jboss-multicloud-blueprint/raw/master/wars/helloworld.war
+
+  app_name:
+    default: helloworld
+
+
+node_templates:
+
+  vm_proxy:
+    type: cloudify.nodes.DeploymentProxy
+    properties:
+      resource_config:
+        blueprint:
+          id:
+            concat:
+              - { get_input: cloud_env }
+              - "-infra-vm"
+          blueprint_archive: https://github.com/Cloudify-PS/multicloud-infra-vm/archive/openstack-dev.zip
+          # blueprint_archive: https://github.com/Cloudify-PS/multicloud-infra-vm/archive/master.zip
+          main_file_name:
+            concat:
+              - { get_input: cloud_env }
+              - ".yaml"
+          external_resource: { get_input: use_existing_vm_deployment }
+        deployment:
+          id:
+            concat:
+              - { get_input: cloud_env }
+              - "-infra-vm"
+          external_resource: { get_input: use_existing_vm_deployment }
+
+  jboss:
+    type: cloudify.terminal.raw
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            terminal_auth: &terminal_auth
+              user: centos
+              ip: { get_capability: [{ concat: [{ get_input: cloud_env }, "-infra-vm"]}, vm_public_ip] }
+              key_content: { get_secret: agent_key_private }
+              errors: []
+            calls:
+              - template: components/jboss-centos7/create.sh
+        configure:
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: components/jboss-centos7/configure.sh
+        start:
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: components/jboss-centos7/start.sh
+        stop:
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: components/jboss-centos7/stop.sh
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: vm_proxy
+
+  app:
+    type: cloudify.terminal.raw
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: components/jboss-app/start.sh
+                params:
+                  app_url: { get_input: app_url }
+                  app_name: { get_input: app_name }
+        stop:
+          inputs:
+            terminal_auth: *terminal_auth
+            calls:
+              - template: components/jboss-app/stop.sh
+                params:
+                  app_name: { get_input: app_name }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: jboss
+
+
+outputs:
+
+  url:
+    description: URL of the web application served by JBoss server
+    value:
+      concat:
+        - "http://"
+        - { get_capability: [{ concat: [{ get_input: cloud_env }, "-infra-vm"]}, vm_public_ip] }
+        - ":8080/"
+        - { get_input: app_name }
