@@ -18,7 +18,7 @@ inputs:
     default: openstack
 
   use_existing_vm_deployment:
-    default: true
+    default: false
 
   app_url:
     default: https://github.com/Cloudify-PS/jboss-multicloud-blueprint/raw/master/wars/helloworld.war
@@ -38,8 +38,7 @@ node_templates:
             concat:
               - { get_input: cloud_env }
               - "-infra-vm"
-          blueprint_archive: https://github.com/Cloudify-PS/multicloud-infra-vm/archive/openstack-dev.zip
-          # blueprint_archive: https://github.com/Cloudify-PS/multicloud-infra-vm/archive/master.zip
+          blueprint_archive: https://github.com/Cloudify-PS/multicloud-infra-vm/archive/master.zip
           main_file_name:
             concat:
               - { get_input: cloud_env }
